@@ -1,0 +1,1047 @@
+// mesa cartesiana smartx
+
+//seguir o modelo: a_x_b_x_c_x_d_x_e_x_f_x_g_x_h_x_i_x_j_x_
+/*
+Parametro A: distancia entre tags vertical
+Parametro B: distancia entre tags horizontal
+Parametro C: distancia entre grupo de tag vertical
+Parametro D: distancia entre grupo de tag horizontal
+Parametro E: quantidade de tags vertical
+Parametro F: quantidade de tags horizontal
+Parametro G: quantidade de grupo de tags vertical
+Parametro H: quantidade de grupo de tag horizontal
+Parametro I: velocidade (1, 2, 3)
+Parametro J: modo de operação (1, 2, 3)
+*/
+
+
+
+//variaveis
+int limpar_erro[50] = {};
+//colocar quantos mm anda por cada grau que o motor gira (levar em conta caixa de reducao)
+//Ex: se a caixa de reducao for 10:1 e o movimentar 0.5mm a cada 1° da caixa de reducao, vai movimentar 0.05 por ° do motor, mm_grau=0.05
+float mm_grau = 0.2;
+float mm_antena = 10;
+int x = 0;
+int p = 0;
+int param[10] = {};
+int cadpar[20] = {};
+int na = 0;
+int val = 0;
+//param[0] distancia verticar entre tags (A)
+//param[1] distancia horizontal entre tags (B)
+//param[2] distancia entre vertical grupos (C)
+//param[3] distancia horizontal entre grupos (D)
+//param[4] numero de tags vertical (E)
+//param[5] numero de tags horizontal (F)
+//param[6] numero de grupos vertical (G)
+//param[7] numero de grupos horizontal (H)
+int valid = 0;
+float pulsos[5][4] = {};
+//puslsos[0] distancia verticar entre tags (A) em pulsos
+//puslsos[1] distancia horizontal entre tags (B) em pulsos
+//puslsos[2] distancia entre vertical grupos (C) em pulsos
+//puslsos[3] distancia horizontal entre grupos (D) em pulsos
+float erro = 0;
+int mm = 0;
+int pul = 0;
+int mode = 0;
+//mode 0 configuracao
+//mode 1 executa
+//mode 2 retorna para ponto zero
+//mode 3 manual
+//mode 4 emergencia
+
+int pulsopin = 13;
+int direcaopin = 14;
+int pulsopin2 = 27;
+int direcaopin2 = 26;
+int enpin = 25;
+int emergencia = 33;
+int cima = 32;
+int baixo = 35;
+int esquerda = 34;
+int direita = 4;
+int zerapin = 18;
+
+int cart[2] = {};
+float erro_acumulado;
+float erro_acumulado2;
+int gpv = 0;
+int gph = 0;
+int tagv = 0;
+int tagh = 0;
+int t1 = 0;
+int mstp = 0;
+
+String cancela = " ";
+String stringOne = " ";
+String tempo = "";
+
+int can = 0;
+
+void cancelar() {
+  can = 1;
+  mode = 4;
+  valid = 1;
+}
+
+void pulsosx() {
+  delay(50);
+  while (valid == 0 && can == 0 && digitalRead(emergencia) == LOW) {
+    if (digitalRead(emergencia) == LOW) {
+      mstp = 0;
+      // 800 pulsos por revolução
+      while (mstp < 4) {
+        delayMicroseconds(param[8]);
+        digitalWrite(pulsopin, !digitalRead(pulsopin));
+        delayMicroseconds(100);
+        digitalWrite(pulsopin, !digitalRead(pulsopin));
+        mstp++;
+      }
+      if (digitalRead(direcaopin) == HIGH) {
+        cart[0]++;
+      }
+      if (digitalRead(direcaopin) == LOW) {
+        cart[0]--;
+      }
+      pul--;
+    }
+    if (pul == 0) {
+      valid = 1;
+    }
+    //cancela a ação
+    if (Serial.available()) {
+      cancela = Serial.readStringUntil('\n');
+    }
+    if (cancela == "cancela") {
+      cancelar();
+    }
+  }
+  delay(50);
+}
+
+void pulsosy() {
+  delay(50);
+  while (valid == 0 && can == 0 && digitalRead(emergencia) == LOW) {
+    if (digitalRead(emergencia) == LOW) {
+      mstp = 0;
+      // 800 pulsos por revolução
+      while (mstp < 4) {
+        delayMicroseconds(param[8]);
+        digitalWrite(pulsopin2, !digitalRead(pulsopin2));
+        delayMicroseconds(param[8]);
+        digitalWrite(pulsopin2, !digitalRead(pulsopin2));
+        mstp++;
+      }
+      if (digitalRead(direcaopin2) == HIGH) {
+        cart[1]++;
+      }
+      if (digitalRead(direcaopin2) == LOW) {
+        cart[1]--;
+      }
+      pul--;
+    }
+    if (pul == 0) {
+      valid = 1;
+    }
+    //cancela a ação
+    if (Serial.available()) {
+      cancela = Serial.readStringUntil('\n');
+    }
+    if (cancela == "cancela") {
+      cancelar();
+    }
+  }
+  delay(50);
+}
+
+void pulsoszx() {
+  while (valid == 0 && digitalRead(emergencia) == LOW) {
+    if (digitalRead(emergencia) == LOW) {
+      mstp = 0;
+      // 800 pulsos por revolução
+      while (mstp < 4) {
+        delayMicroseconds(100);
+        digitalWrite(pulsopin, !digitalRead(pulsopin));
+        delayMicroseconds(100);
+        digitalWrite(pulsopin, !digitalRead(pulsopin));
+        mstp++;
+      }
+      if (digitalRead(direcaopin) == HIGH) {
+        cart[0]++;
+      }
+      if (digitalRead(direcaopin) == LOW) {
+        cart[0]--;
+      }
+      pul--;
+    }
+    if (pul == 0) {
+      valid = 1;
+    }
+  }
+}
+
+void cart0() {
+  if (cart[0] < 0 && digitalRead(emergencia) == LOW) {
+    digitalWrite(direcaopin, HIGH);
+  }
+  if (cart[0] > 0) {
+    digitalWrite(direcaopin, LOW);
+  }
+  pul = 1;
+  valid = 0;
+}
+
+void pulsoszy() {
+  while (valid == 0 && digitalRead(emergencia) == LOW) {
+    if (digitalRead(emergencia) == LOW) {
+      mstp = 0;
+      // 800 pulsos por revolução
+      while (mstp < 4) {
+        delayMicroseconds(100);
+        digitalWrite(pulsopin2, !digitalRead(pulsopin2));
+        delayMicroseconds(100);
+        digitalWrite(pulsopin2, !digitalRead(pulsopin2));
+        mstp++;
+      }
+      if (digitalRead(direcaopin2) == HIGH) {
+        cart[1]++;
+      }
+      if (digitalRead(direcaopin2) == LOW) {
+        cart[1]--;
+      }
+      pul--;
+    }
+    if (pul == 0) {
+      valid = 1;
+    }
+  }
+}
+
+void cart1() {
+  if (cart[1] < 0) {
+    digitalWrite(direcaopin2, HIGH);
+  }
+  if (cart[1] > 0) {
+    digitalWrite(direcaopin2, LOW);
+  }
+  pul = 1;
+  valid = 0;
+}
+
+void zerar() {
+  //zera variaveis
+  can = 0;
+  x = 0;
+  p = 0;
+  na = 0;
+  valid = 0;
+  String direcao = "o";
+  cancela = " ";
+  gpv = 0;
+  gph = 0;
+  tagv = 0;
+  tagh = 0;
+
+  while (na < (sizeof(cadpar)) / (sizeof(cadpar[0]))) {
+    cadpar[na] = 0;
+    na++;
+  }
+  na = 0;
+  while (na < (sizeof(param)) / (sizeof(param[0]))) {
+    param[na] = 0;
+    na++;
+  }
+  na = 0;
+  while (na < 4) {
+    pulsos[na][0] = 0;
+    pulsos[na][1] = 0;
+    pulsos[na][2] = 0;
+    pulsos[na][3] = 0;
+    na++;
+  }
+  na = 0;
+  //zera outputs
+  digitalWrite(pulsopin, HIGH);
+  digitalWrite(direcaopin, HIGH);
+  digitalWrite(pulsopin2, HIGH);
+  digitalWrite(direcaopin2, HIGH);
+  digitalWrite(enpin, HIGH);
+}
+
+void getparam() {
+  while (!Serial.available() && digitalRead(emergencia == LOW))
+    ;  // Wait for input
+  stringOne = Serial.readStringUntil('\n');
+
+  //referencia da string
+
+  String stringTwo = "_";
+
+  //mostra comando de parametros
+
+  Serial.println("parametros: " + stringOne);
+
+  //verifica se vai estar no modo manual ou automatico
+  if (stringOne == "manual") {
+    mode = 5;
+  } else {
+    //verifica a posição das referencias
+
+    while (x != stringOne.length() && digitalRead(emergencia) == LOW) {
+      if (stringOne.substring(x, x + stringTwo.length()) == stringTwo) {
+        cadpar[p] = x;
+        Serial.println(cadpar[p]);
+        p++;
+      }
+      x++;
+    }
+    Serial.println("");
+    na = 0;
+    p = 0;
+    x = 0;
+
+    //salva os parametros
+    while (x < (sizeof(param)) / (sizeof(param[0]))) {
+      String num = stringOne.substring(cadpar[p] + 1, cadpar[p + 1]);
+      val = num.toInt();
+      param[na] = val;
+      Serial.print("p: ");
+      Serial.println(param[na]);
+      na++;
+      p = p + 2;
+      x++;
+    }
+    param[8] = param[8] * 100;
+    if (param[8] < 100) {
+      param[8] = 100;
+    }
+    if (param[8] > 300) {
+      param[8] = 300;
+    }
+    if (param[9] == 1 || param[9] == 2 || param[9] == 3) {
+      mode = param[9];
+      if (mode == 3) {
+        Serial.println("Qual delay(ms): ");
+        while (!Serial.available() && digitalRead(emergencia == LOW))
+          ;  // Wait for input
+        tempo = Serial.readStringUntil('\n');
+        t1 = tempo.toInt();
+        Serial.println(t1);
+      }
+    } else {
+      mode = 1;
+    }
+    Serial.println("");
+    na = 0;
+
+    //mostra os parametros
+    while (na < (sizeof(param)) / (sizeof(param[0])) && digitalRead(emergencia) == LOW) {
+      Serial.println(param[na]);
+      na++;
+    }
+    Serial.println("");
+    na = 0;
+
+    //transforma as distancias em pulsos
+    while (na < 4 && digitalRead(emergencia) == LOW) {
+      val = param[na] / mm_grau;
+      pulsos[na][0] = (val * 10) / 18;
+      erro = val - (pulsos[na][0] * 1.8);
+      if (erro > 0.9) {
+        pulsos[na][0] = pulsos[na][0] + 1;
+      }
+      erro = val - (pulsos[na][0] * 1.8);
+      erro = erro * (-1);
+      pulsos[na][1] = val;
+      pulsos[na][2] = erro;
+      pulsos[na][3] = mm_grau * erro;
+      Serial.print(param[na]);
+      Serial.print("mm ");
+      Serial.print(pulsos[na][0]);
+      Serial.print(" pulsos ");
+      Serial.print(pulsos[na][1]);
+      Serial.print("° graus erro: ");
+      Serial.print(pulsos[na][2]);
+      Serial.print("° ");
+      Serial.print(pulsos[na][3]);
+      Serial.println("mm");
+      na++;
+    }
+    if (na == 4 && digitalRead(emergencia) == LOW) {
+      val = mm_antena / mm_grau;
+      pulsos[na][0] = (val * 10) / 18;
+      erro = val - (pulsos[na][0] * 1.8);
+      if (erro > 0.9) {
+        pulsos[na][0] = pulsos[na][0] + 1;
+      }
+      erro = val - (pulsos[na][0] * 1.8);
+      erro = erro * (-1);
+      pulsos[na][1] = val;
+      pulsos[na][2] = erro;
+      pulsos[na][3] = mm_grau * erro;
+      Serial.println("Antena: ");
+      Serial.print(mm_antena);
+      Serial.print("mm ");
+      Serial.print(pulsos[na][0]);
+      Serial.print(" pulsos ");
+      Serial.print(pulsos[na][1]);
+      Serial.print("° graus erro: ");
+      Serial.print(pulsos[na][2]);
+      Serial.print("° ");
+      Serial.print(pulsos[na][3]);
+      Serial.println("mm");
+      Serial.print("velocidade: ");
+      Serial.println(param[8]);
+      Serial.print("modo: ");
+      Serial.println(mode);
+    }
+    Serial.println("");
+    Serial.println("");
+    na = 0;
+    pul = 0;
+    p = 0;
+    x = 0;
+    while (na < (sizeof(param)) / (sizeof(param[0])) && digitalRead(emergencia) == LOW) {
+      if (param[na] == 0) {
+        mode = 0;
+        Serial.print("Parametro zerado: ");
+        Serial.println(na);
+      }
+      na++;
+    }
+  }
+}
+
+void verifica_erro() {
+  if (erro_acumulado < (-1.8)) {
+    pul++;
+    erro_acumulado = erro_acumulado + 1.8;
+  }
+  if (erro_acumulado > 1.8) {
+    pul--;
+    erro_acumulado = erro_acumulado - 1.8;
+  }
+}
+
+void verifica_erro2() {
+  if (erro_acumulado2 < (-1.8)) {
+    pul++;
+    erro_acumulado2 = erro_acumulado2 + 1.8;
+  }
+  if (erro_acumulado2 > 1.8) {
+    pul--;
+    erro_acumulado2 = erro_acumulado2 - 1.8;
+  }
+}
+
+void cartpos() {
+  Serial.print(cart[0]);
+  Serial.print(" ");
+  Serial.println(cart[1]);
+}
+
+void manualmov() {
+  if (cima == 0) {
+    delay(5);
+    digitalWrite(direcaopin, LOW);
+    digitalWrite(pulsopin, !digitalRead(pulsopin));
+  }
+  if (baixo == 0) {
+    delay(5);
+    digitalWrite(direcaopin, HIGH);
+    digitalWrite(pulsopin, !digitalRead(pulsopin));
+  }
+  if (esquerda == 0) {
+    delay(5);
+    digitalWrite(direcaopin2, LOW);
+    digitalWrite(pulsopin2, !digitalRead(pulsopin2));
+  }
+  if (direita == 0) {
+    delay(5);
+    digitalWrite(direcaopin2, HIGH);
+    digitalWrite(pulsopin2, !digitalRead(pulsopin2));
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(pulsopin, OUTPUT);
+  pinMode(direcaopin, OUTPUT);
+  pinMode(pulsopin2, OUTPUT);
+  pinMode(direcaopin2, OUTPUT);
+  pinMode(enpin, OUTPUT);
+  pinMode(emergencia, INPUT);
+  pinMode(cima, INPUT);
+  pinMode(baixo, INPUT);
+  pinMode(esquerda, INPUT);
+  pinMode(direita, INPUT);
+  pinMode(zerapin, INPUT);
+
+
+  while (!Serial) {
+    ;  // wait for serial port to connect. Needed for native USB port only
+  }
+}
+
+void loop() {
+
+  //configuracao
+  while (mode == 0 && digitalRead(emergencia) == LOW) {
+    zerar();
+    Serial.println("parametros: ");
+    getparam();
+  }
+  //executa
+  erro_acumulado = 0;
+  valid = 0;
+
+  while (mode == 1 && can == 0 && digitalRead(emergencia) == LOW) {
+    //pulsos geral descida
+    pul = (pulsos[0][0] * param[4] * param[6]) + (pulsos[2][0] * param[6]) + pulsos[4][0];
+    //erro geral
+    erro_acumulado = (pulsos[0][2] * param[4] * param[6]) + (pulsos[2][2] * param[6]) + pulsos[4][2];
+    while (erro_acumulado < (-1.8) || erro_acumulado > 1.8) {
+      verifica_erro();
+    }
+    Serial.print(pul);
+    Serial.println(" pulsos");
+    //executa os pulsos
+    digitalWrite(direcaopin, HIGH);
+    pulsosx();
+    delay(50);
+    if (can == 0) {
+      x = 0;
+      while (x == 0 && can == 0 && digitalRead(emergencia) == LOW) {
+        if (tagh < param[5] - 1) {
+          //zera x
+          if (cart[0] == 0) {
+            x = 1;
+          } else {
+            Serial.print("zera x ");
+            cartpos();
+            x = 0;
+          }
+          while (x == 0 && digitalRead(emergencia) == LOW) {
+            cart0();
+            //executa os pulsos
+            pulsoszx();
+            if (cart[0] == 0) {
+              x = 1;
+            }
+          }
+          erro_acumulado = 0;
+          tagh++;
+          valid = 0;
+          pul = pulsos[1][0];
+          verifica_erro2();
+          //executa os pulsos
+          if (cancela == "cancela") {
+            cancelar();
+          } else {
+            Serial.print("proxima coluna ");
+            cartpos();
+          }
+          pulsosy();
+          x = 1;
+          valid = 0;
+          erro_acumulado2 = erro_acumulado2 + pulsos[1][2];
+        } else {
+          x = 2;
+          tagh = 0;
+        }
+
+        while (x == 2 && can == 0 && digitalRead(emergencia) == LOW) {
+          if (gph < param[7] - 1) {
+            //zera x
+            if (cart[0] == 0) {
+              x = 1;
+            } else {
+              Serial.print("zera x ");
+              cartpos();
+              x = 0;
+            }
+            while (x == 0 && digitalRead(emergencia) == LOW) {
+              cart0();
+              //executa os pulsos
+              pulsoszx();
+              if (cart[0] == 0) {
+                x = 1;
+              }
+            }
+            gph++;
+            erro_acumulado = 0;
+            pul = pulsos[3][0];
+            verifica_erro2();
+            //executa os pulsos
+            if (cancela == "cancela") {
+              cancelar();
+            } else {
+              Serial.print("proximo grupo de colunas ");
+              cartpos();
+            }
+
+            pulsosy();
+            valid = 0;
+            erro_acumulado2 = erro_acumulado2 + pulsos[1][2];
+          } else {
+            mode = 4;
+          }
+          x = 1;
+        }
+      }
+    }
+  }
+
+  x = 0;
+  while (mode == 2 && can == 0 && digitalRead(emergencia) == LOW) {
+    while (mode == 2 && gpv < param[6] && can == 0 && digitalRead(emergencia) == LOW) {
+      while (mode == 2 && tagv < param[4] - 1 && can == 0 && digitalRead(emergencia) == LOW) {
+        //executa barcode
+        if (x == 1) {
+          pul = pulsos[0][0] - pulsos[4][0];
+          if (pul < 0) {
+            pul = pul * (-1);
+            digitalWrite(direcaopin, LOW);
+          } else {
+            digitalWrite(direcaopin, HIGH);
+          }
+          if (pul == 0) {
+            valid = 1;
+          }
+          verifica_erro();
+          //executa os pulsos
+          while (!Serial.available() && digitalRead(emergencia == LOW) && can == 0)
+            ;
+          cancela = Serial.readStringUntil('\n');
+          if (cancela == "cancela") {
+            cancelar();
+          } else {
+            Serial.print("proxima linha ");
+            cartpos();
+          }
+          pulsosx();
+          if (can == 0) {
+            valid = 0;
+            if (digitalRead(direcaopin) == LOW) {
+              erro_acumulado = erro_acumulado + pulsos[0][2];
+            } else {
+              erro_acumulado = erro_acumulado - pulsos[0][2];
+            }
+            tagv++;
+          }
+        }
+        //executa tag
+        valid = 0;
+        digitalWrite(direcaopin, HIGH);
+        pul = pulsos[4][0];
+        verifica_erro();
+        //executa os pulsos
+        while (!Serial.available() && digitalRead(emergencia == LOW) && can == 0)
+          ;
+        cancela = Serial.readStringUntil('\n');
+        if (cancela == "cancela") {
+          cancelar();
+        } else {
+          Serial.print("tag ");
+          cartpos();
+        }
+        pulsosx();
+        if (can == 0) {
+          valid = 0;
+          if (digitalRead(direcaopin) == LOW) {
+            erro_acumulado = erro_acumulado + pulsos[4][2];
+          } else {
+            erro_acumulado = erro_acumulado - pulsos[4][2];
+          }
+          x = 1;
+        }
+      }
+      if (can == 0) {
+        valid = 0;
+        tagv = 0;
+        gpv++;
+        pul = pulsos[2][0] - pulsos[4][0];
+        verifica_erro();
+        if (gpv < param[6] && can == 0 && digitalRead(emergencia) == LOW) {
+          while (!Serial.available() && digitalRead(emergencia == LOW) && can == 0)
+            ;
+          cancela = Serial.readStringUntil('\n');
+          if (cancela == "cancela") {
+            cancelar();
+          } else {
+            Serial.print("proximo grupo ");
+            cartpos();
+          }
+          pulsosx();
+          x = 0;
+        }
+        erro_acumulado = erro_acumulado + pulsos[2][2];
+        valid = 0;
+      }
+    }
+    if (can == 0) {
+      gpv = 0;
+      tagv = 0;
+      x = 0;
+
+      while (x == 0 && can == 0 && digitalRead(emergencia) == LOW) {
+        if (tagh < param[5] - 1) {
+          //zera x
+          while (!Serial.available() && digitalRead(emergencia == LOW) && can == 0)
+            ;
+          if (cart[0] == 0) {
+            x = 1;
+          } else {
+            Serial.print("zera x ");
+            cartpos();
+            x = 0;
+          }
+          while (x == 0 && digitalRead(emergencia) == LOW) {
+            cart0();
+            //executa os pulsos
+            pulsoszx();
+            if (cart[0] == 0) {
+              x = 1;
+            }
+          }
+          erro_acumulado = 0;
+          tagh++;
+          valid = 0;
+          pul = pulsos[1][0];
+          verifica_erro2();
+          //executa os pulsos
+          while (!Serial.available() && digitalRead(emergencia == LOW) && can == 0)
+            ;
+          cancela = Serial.readStringUntil('\n');
+          if (cancela == "cancela") {
+            cancelar();
+          } else {
+            Serial.print("proxima coluna ");
+            cartpos();
+          }
+          x = 0;
+          pulsosy();
+          x = 1;
+          valid = 0;
+          erro_acumulado2 = erro_acumulado2 + pulsos[1][2];
+        } else {
+          x = 2;
+          tagh = 0;
+        }
+
+        while (x == 2 && can == 0 && digitalRead(emergencia) == LOW) {
+          if (gph < param[7] - 1) {
+            //zera x
+            while (!Serial.available() && digitalRead(emergencia == LOW) && can == 0)
+              ;
+            if (cart[0] == 0) {
+              x = 1;
+            } else {
+              Serial.print("zera x ");
+              cartpos();
+              x = 0;
+            }
+            while (x == 0 && digitalRead(emergencia) == LOW) {
+              cart0();
+              //executa os pulsos
+              pulsoszx();
+              if (cart[0] == 0) {
+                x = 1;
+              }
+            }
+            erro_acumulado = 0;
+            gph++;
+            digitalWrite(direcaopin, !digitalRead(direcaopin));
+            erro_acumulado = 0;
+            pul = pulsos[3][0];
+            verifica_erro2();
+            //executa os pulsos
+            while (!Serial.available() && digitalRead(emergencia == LOW) && can == 0)
+              ;
+            cancela = Serial.readStringUntil('\n');
+            if (cancela == "cancela") {
+              cancelar();
+            } else {
+              Serial.print("proximo grupo de colunas ");
+              cartpos();
+            }
+            x = 0;
+            pulsosy();
+            valid = 0;
+            erro_acumulado2 = erro_acumulado2 + pulsos[1][2];
+          } else {
+            mode = 4;
+          }
+          x = 1;
+        }
+      }
+      x = 0;
+    }
+  }
+
+  while (mode == 3 && can == 0 && digitalRead(emergencia) == LOW) {
+    while (mode == 3 && gpv < param[6] && can == 0 && digitalRead(emergencia) == LOW) {
+      while (mode == 3 && tagv < param[4] - 1 && can == 0 && digitalRead(emergencia) == LOW) {
+        //executa barcode
+        if (x == 1) {
+          pul = pulsos[0][0] - pulsos[4][0];
+          if (pul < 0) {
+            pul = pul * (-1);
+            digitalWrite(direcaopin, LOW);
+          } else {
+            digitalWrite(direcaopin, HIGH);
+          }
+          if (pul == 0) {
+            valid = 1;
+          }
+          verifica_erro();
+          //executa os pulsos
+          delay(t1);
+          cancela = Serial.readStringUntil('\n');
+          if (cancela == "cancela") {
+            cancelar();
+          } else {
+            Serial.print("proxima linha ");
+            cartpos();
+          }
+          pulsosx();
+          if (can == 0) {
+            valid = 0;
+            if (digitalRead(direcaopin) == LOW) {
+              erro_acumulado = erro_acumulado + pulsos[0][2];
+            } else {
+              erro_acumulado = erro_acumulado - pulsos[0][2];
+            }
+            tagv++;
+          }
+        }
+        //executa tag
+        valid = 0;
+        digitalWrite(direcaopin, HIGH);
+        pul = pulsos[4][0];
+        verifica_erro();
+        //executa os pulsos
+        delay(t1);
+        cancela = Serial.readStringUntil('\n');
+        if (cancela == "cancela") {
+          cancelar();
+        } else {
+          Serial.print("tag ");
+          cartpos();
+        }
+        pulsosx();
+        if (can == 0) {
+          valid = 0;
+          if (digitalRead(direcaopin) == LOW) {
+            erro_acumulado = erro_acumulado + pulsos[4][2];
+          } else {
+            erro_acumulado = erro_acumulado - pulsos[4][2];
+          }
+          x = 1;
+        }
+      }
+      if (can == 0) {
+        valid = 0;
+        tagv = 0;
+        gpv++;
+        pul = pulsos[2][0] - pulsos[4][0];
+        verifica_erro();
+        if (gpv < param[6] && can == 0 && digitalRead(emergencia) == LOW) {
+          delay(t1);
+          cancela = Serial.readStringUntil('\n');
+          if (cancela == "cancela") {
+            cancelar();
+          } else {
+            Serial.print("proximo grupo ");
+            cartpos();
+          }
+          pulsosx();
+          x = 0;
+        }
+        erro_acumulado = erro_acumulado + pulsos[2][2];
+        valid = 0;
+      }
+    }
+    if (can == 0) {
+      gpv = 0;
+      tagv = 0;
+      x = 0;
+      while (x == 0 && can == 0 && digitalRead(emergencia) == LOW) {
+        if (tagh < param[5] - 1) {
+          //zera x
+          delay(t1);
+          if (cart[0] == 0) {
+            x = 1;
+          } else {
+            Serial.print("zera x ");
+            cartpos();
+            x = 0;
+          }
+          while (x == 0 && digitalRead(emergencia) == LOW) {
+            cart0();
+            //executa os pulsos
+            pulsoszx();
+            if (cart[0] == 0) {
+              x = 1;
+            }
+          }
+          erro_acumulado = 0;
+          tagh++;
+          valid = 0;
+          pul = pulsos[1][0];
+          verifica_erro2();
+          //executa os pulsos
+          delay(t1);
+          cancela = Serial.readStringUntil('\n');
+          if (cancela == "cancela") {
+            cancelar();
+          } else {
+            Serial.print("proxima coluna ");
+            cartpos();
+          }
+          x = 0;
+          pulsosy();
+          x = 1;
+          valid = 0;
+          erro_acumulado2 = erro_acumulado2 + pulsos[1][2];
+        } else {
+          x = 2;
+          tagh = 0;
+        }
+
+
+        while (x == 2 && can == 0 && digitalRead(emergencia) == LOW) {
+          if (gph < param[7] - 1) {
+            //zera x
+            delay(t1);
+            if (cart[0] == 0) {
+              x = 1;
+            } else {
+              Serial.print("zera x ");
+              cartpos();
+              x = 0;
+            }
+            while (x == 0 && digitalRead(emergencia) == LOW) {
+              cart0();
+              //executa os pulsos
+              pulsoszx();
+              if (cart[0] == 0) {
+                x = 1;
+              }
+            }
+            erro_acumulado = 0;
+            gph++;
+            digitalWrite(direcaopin, !digitalRead(direcaopin));
+            erro_acumulado = 0;
+            pul = pulsos[3][0];
+            verifica_erro2();
+            //executa os pulsos
+            delay(t1);
+            cancela = Serial.readStringUntil('\n');
+            if (cancela == "cancela") {
+              cancelar();
+            } else {
+              Serial.print("proximo grupo de colunas ");
+              cartpos();
+            }
+            x = 0;
+            pulsosy();
+            valid = 0;
+            erro_acumulado2 = erro_acumulado2 + pulsos[1][2];
+          } else {
+            mode = 4;
+          }
+          x = 1;
+        }
+      }
+      x = 0;
+    }
+  }
+  //zera cartesiano
+  while (mode == 4 && digitalRead(emergencia) == LOW) {
+    Serial.println("Concluido");
+    if (can == 0) {
+      while (!Serial.available() && digitalRead(emergencia == LOW))
+        ;
+    }
+    //zera x
+    if (cart[0] == 0) {
+      x = 1;
+    } else {
+      Serial.print("zera x ");
+      cartpos();
+      x = 0;
+    }
+    while (x == 0 && digitalRead(emergencia) == LOW) {
+      cart0();
+      //executa os pulsos
+      pulsoszx();
+      if (cart[0] == 0) {
+        x = 1;
+      }
+    }
+    erro_acumulado = 0;
+    //zera y
+    if (cart[1] == 0) {
+      x = 1;
+    } else {
+      Serial.print("zera y ");
+      cartpos();
+      x = 0;
+    }
+    while (x == 0 && digitalRead(emergencia) == LOW) {
+      cart1();
+      //executa os pulsos
+      pulsoszy();
+      if (cart[1] == 0) {
+        x = 1;
+      }
+    }
+    if (cart[0] == 0 && cart[1] == 0) {
+      mode = 0;
+      cartpos();
+    }
+    erro_acumulado2 = 0;
+  }
+  //modo manual
+  while (mode == 5 && digitalRead(emergencia) == LOW) {
+    if (x == 0) {
+      Serial.println("modo manual");
+      x = 1;
+    }
+    if (Serial.available()) {
+      stringOne = Serial.readStringUntil('\n');
+      if (stringOne == "auto") {
+        stringOne = "";
+        Serial.println("modo automático");
+        mode = 0;
+      }
+    }
+    manualmov();
+    if (zerapin == 0) {
+      cart[0] = 0;
+      cart[1] = 0;
+    }
+  }
+  //emergencia
+  if (digitalRead(emergencia) == HIGH) {
+    mode = 6;
+  }
+  while (mode == 6) {
+    if (digitalRead(enpin) == HIGH) {
+      Serial.println("modo emergência, necessário voltar para modo manual e definir p0");
+    }
+    digitalWrite(enpin, LOW);
+    if (Serial.available()) {
+      stringOne = Serial.readStringUntil('\n');
+      if (stringOne == "manual") {
+        stringOne = "";
+        digitalWrite(enpin, HIGH);
+        mode = 5;
+      }
+    }
+  }
+}
