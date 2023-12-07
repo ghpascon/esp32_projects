@@ -195,6 +195,7 @@ void cart0() {
 
 void pulsoszy() {
   while (valid == 0 && digitalRead(emergencia) == LOW) {
+
     if (digitalRead(emergencia) == LOW) {
       mstp = 0;
       // 800 pulsos por revolução
@@ -444,24 +445,53 @@ void cartpos() {
 
 void manualmov() {
   if (cima == 0) {
-    delay(5);
     digitalWrite(direcaopin, LOW);
-    digitalWrite(pulsopin, !digitalRead(pulsopin));
+    mstp = 0;
+    // 800 pulsos por revolução
+   while (mstp < 4) {
+      delayMicroseconds(200);
+      digitalWrite(pulsopin, !digitalRead(pulsopin));
+      delayMicroseconds(200);
+      digitalWrite(pulsopin, !digitalRead(pulsopin));
+      mstp++;
+    }
+    }
   }
   if (baixo == 0) {
-    delay(5);
     digitalWrite(direcaopin, HIGH);
-    digitalWrite(pulsopin, !digitalRead(pulsopin));
+    mstp = 0;
+    // 800 pulsos por revolução
+    while (mstp < 4) {
+      delayMicroseconds(200);
+      digitalWrite(pulsopin, !digitalRead(pulsopin));
+      delayMicroseconds(200);
+      digitalWrite(pulsopin, !digitalRead(pulsopin));
+      mstp++;
+    }
   }
   if (esquerda == 0) {
-    delay(5);
     digitalWrite(direcaopin2, LOW);
-    digitalWrite(pulsopin2, !digitalRead(pulsopin2));
+    mstp = 0;
+    // 800 pulsos por revolução
+    while (mstp < 4) {
+      delayMicroseconds(200);
+      digitalWrite(pulsopin2, !digitalRead(pulsopin2));
+      delayMicroseconds(200);
+      digitalWrite(pulsopin2, !digitalRead(pulsopin2));
+      mstp++;
+    }
   }
   if (direita == 0) {
-    delay(5);
     digitalWrite(direcaopin2, HIGH);
-    digitalWrite(pulsopin2, !digitalRead(pulsopin2));
+    mstp = 0;
+    // 800 pulsos por revolução
+    while (mstp < 4) {
+      delayMicroseconds(200);
+      digitalWrite(pulsopin2, !digitalRead(pulsopin2));
+      delayMicroseconds(200);
+      digitalWrite(pulsopin2, !digitalRead(pulsopin2));
+      mstp++;
+    }
   }
 }
 
@@ -496,6 +526,7 @@ void loop() {
   }
   //executa
   erro_acumulado = 0;
+    erro_acumulado2 = 0;
   valid = 0;
 
   while (mode == 1 && can == 0 && digitalRead(emergencia) == LOW) {
@@ -511,7 +542,6 @@ void loop() {
     //executa os pulsos
     digitalWrite(direcaopin, HIGH);
     pulsosx();
-    delay(50);
     if (can == 0) {
       x = 0;
       while (x == 0 && can == 0 && digitalRead(emergencia) == LOW) {
